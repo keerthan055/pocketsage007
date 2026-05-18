@@ -34,9 +34,9 @@ const Goals = () => {
         try {
             const token = localStorage.getItem('token');
             const [goalsRes, statsRes, achievementsRes] = await Promise.all([
-                axios.get('http://localhost:8000/goals/', { headers: { Authorization: `Bearer ${token}` }}),
-                axios.get('http://localhost:8000/goals/gamification', { headers: { Authorization: `Bearer ${token}` }}),
-                axios.get('http://localhost:8000/goals/achievements', { headers: { Authorization: `Bearer ${token}` }})
+                axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/', { headers: { Authorization: `Bearer ${token}` }}),
+                axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/gamification', { headers: { Authorization: `Bearer ${token}` }}),
+                axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/achievements', { headers: { Authorization: `Bearer ${token}` }})
             ]);
             
             // Apply User Requests to Achievements
@@ -63,7 +63,7 @@ const Goals = () => {
             const token = localStorage.getItem('token');
             const formData = new FormData();
             Object.entries(missionForm).forEach(([k, v]) => formData.append(k, v));
-            await axios.post('http://localhost:8000/goals/', formData, { headers: { Authorization: `Bearer ${token}` }});
+            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/', formData, { headers: { Authorization: `Bearer ${token}` }});
             setShowDeployModal(false);
             setMissionForm({ name: '', target_amount: '', category: 'Travel', deadline: new Date().toISOString().split('T')[0] });
             fetchData();
@@ -77,7 +77,7 @@ const Goals = () => {
             const token = localStorage.getItem('token');
             const formData = new FormData();
             formData.append('amount', contributionAmount);
-            await axios.post(`http://localhost:8000/goals/${selectedGoal.id}/contribute`, formData, {
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/${selectedGoal.id}/contribute`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowContributeModal(false);

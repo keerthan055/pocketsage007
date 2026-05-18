@@ -32,7 +32,7 @@ const Alerts = () => {
     const fetchAlerts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:8000/alerts/', {
+            const response = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/alerts/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setAlerts(response.data);
@@ -80,7 +80,7 @@ const Alerts = () => {
     const markAsRead = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:8000/alerts/${id}/read`, {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/alerts/${id}/read`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Optimistic UI update
@@ -95,7 +95,7 @@ const Alerts = () => {
     const markAllAsRead = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:8000/alerts/read-all', {}, {
+            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/alerts/read-all', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Optimistic UI update

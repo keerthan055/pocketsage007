@@ -154,7 +154,7 @@ const ReceiptScannerModal = ({ isOpen, onClose, onRefresh }) => {
             const blob = await fetch(image).then(res => res.blob());
             const uploadFormData = new FormData();
             uploadFormData.append('file', blob, 'receipt.png');
-            const uploadRes = await axios.post('http://localhost:8000/receipts/upload', uploadFormData, {
+            const uploadRes = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/receipts/upload', uploadFormData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -166,7 +166,7 @@ const ReceiptScannerModal = ({ isOpen, onClose, onRefresh }) => {
             confirmFormData.append('transaction_date', new Date().toISOString());
             confirmFormData.append('ocr_text', editForm.ocr_text);
 
-            await axios.post('http://localhost:8000/receipts/confirm', confirmFormData, {
+            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/receipts/confirm', confirmFormData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

@@ -50,11 +50,11 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const endpoints = [
-        'http://localhost:8000/dashboard/summary',
-        'http://localhost:8000/fds/current',
-        'http://localhost:8000/fds/history',
-        'http://localhost:8000/dashboard/daily-briefing',
-        'http://localhost:8000/dashboard/score-breakdown'
+        '${import.meta.env.VITE_API_URL || "http://localhost:8000"}/dashboard/summary',
+        '${import.meta.env.VITE_API_URL || "http://localhost:8000"}/fds/current',
+        '${import.meta.env.VITE_API_URL || "http://localhost:8000"}/fds/history',
+        '${import.meta.env.VITE_API_URL || "http://localhost:8000"}/dashboard/daily-briefing',
+        '${import.meta.env.VITE_API_URL || "http://localhost:8000"}/dashboard/score-breakdown'
       ];
 
       // Use allSettled so one failed sector doesn't block the entire Lattice

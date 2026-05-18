@@ -35,7 +35,7 @@ const Investments = () => {
     const fetchPortfolio = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:8000/investments/portfolio', {
+            const res = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/investments/portfolio', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setDashData(res.data);
@@ -75,7 +75,7 @@ const Investments = () => {
                 buy_price: buyPriceUSD,
                 current_price: currentPriceUSD
             };
-            const res = await axios.post('http://localhost:8000/investments/add', payload, {
+            const res = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/investments/add', payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Auto update dashboard data

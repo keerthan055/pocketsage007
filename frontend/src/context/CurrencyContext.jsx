@@ -28,7 +28,7 @@ export const CurrencyProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await axios.get('http://localhost:8000/currency/', {
+        const response = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/currency/', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const saved = currencies.find(c => c.code === response.data.currency_code);
@@ -46,7 +46,7 @@ export const CurrencyProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.put('http://localhost:8000/currency/update', {
+        await axios.put('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/currency/update', {
           currency_code: currency.code,
           country_name: currency.name,
           symbol: currency.symbol
