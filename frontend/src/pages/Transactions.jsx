@@ -29,7 +29,7 @@ const Transactions = () => {
     const fetchTransactions = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Chronological Priority Sort: Newest -> Oldest
@@ -50,7 +50,7 @@ const Transactions = () => {
             const formData = new FormData();
             Object.entries(manualForm).forEach(([k, v]) => formData.append(k, v));
             
-            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/', formData, {
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowManualModal(false);
@@ -67,7 +67,7 @@ const Transactions = () => {
         
         try {
             const token = localStorage.getItem('token');
-            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/upload-csv', formData, {
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/upload-csv`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchTransactions();
@@ -81,7 +81,7 @@ const Transactions = () => {
             formData.append('bank_name', bank);
             formData.append('account_type', 'Checking');
             
-            await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/bank/sync', formData, {
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/bank/sync`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowBankModal(false);

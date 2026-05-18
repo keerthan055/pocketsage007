@@ -19,7 +19,7 @@ const Sidebar = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const response = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/alerts/', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/alerts/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const count = response.data.filter(a => !a.is_read).length;

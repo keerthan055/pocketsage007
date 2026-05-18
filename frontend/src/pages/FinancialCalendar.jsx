@@ -36,7 +36,7 @@ const FinancialCalendar = () => {
     const fetchEvents = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/calendar/', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/calendar/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setEvents(res.data);
@@ -180,7 +180,7 @@ const FinancialCalendar = () => {
                 setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? res.data : ev));
             } else {
                 // Create
-                const res = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/calendar/', dataToSave, {
+                const res = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/calendar/`, dataToSave, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setEvents(prev => [...prev, res.data]);

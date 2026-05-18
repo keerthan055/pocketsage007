@@ -15,9 +15,9 @@ const Profile = () => {
         const headers = { Authorization: `Bearer ${token}` };
         
         const [profRes, sumRes, actRes] = await Promise.all([
-          axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/', { headers }),
-          axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/financial-summary', { headers }),
-          axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/activity', { headers })
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/financial-summary`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/profile/activity`, { headers })
         ]);
 
         setProfile(profRes.data);

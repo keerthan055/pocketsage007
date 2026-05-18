@@ -46,7 +46,7 @@ const AICopilot = () => {
     useEffect(() => {
         const fetchStatus = async () => {
             try {
-                const response = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/copilot/status');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/copilot/status`);
                 setStatus(response.data);
             } catch (err) { console.error(err); }
         };
@@ -87,7 +87,7 @@ const AICopilot = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/copilot/query', 
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/copilot/query`, 
                 { text: queryText },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

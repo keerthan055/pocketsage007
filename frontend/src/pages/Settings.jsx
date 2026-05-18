@@ -19,7 +19,7 @@ const Settings = () => {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/settings/', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/settings/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSettings(res.data);
@@ -84,7 +84,7 @@ const Settings = () => {
     setPasswordChanging(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/change-password', {
+      await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/change-password`, {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password
       }, {

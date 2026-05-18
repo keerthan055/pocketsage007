@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     formData.append('username', email);
     formData.append('password', password);
     
-    const response = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/login', formData);
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/login`, formData);
     const { access_token } = response.data;
     localStorage.setItem('token', access_token);
     setUser({ email }); // Simplified user object
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password, fullName) => {
-    const response = await axios.post('${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/register', {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/register`, {
       email,
       password,
       full_name: fullName

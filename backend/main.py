@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import os
 
 from core.database import engine, Base
 from api.routers import (
@@ -46,4 +47,5 @@ async def root():
     return {"message": "Welcome to PocketSage AI - Adaptive Personal Financial Distress Early-Warning System"}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
