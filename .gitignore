@@ -1,0 +1,66 @@
+# Environment Variables - NEVER commit secrets
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+*.whl
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# SQLite local database
+backend/pocketsage.db
+*.db
+*.sqlite3
+
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Logs
+*.log
+logs/
+
+# ML model artifacts
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+
+# Node.js / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+frontend/build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep

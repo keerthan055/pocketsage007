@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background-color: #09090b;
+  color: #fafafa;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Premium Fintech Animations */
+@keyframes alert-pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes risk-dot-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-alert-glow {
+  animation: alert-pulse-red 2s infinite;
+}
+
+.risk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.risk-dot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: risk-dot-pulse 2s infinite;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+.glass {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.animate-glow {
+  animation: glow 2s infinite ease-in-out;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+}
+
+/* Light mode overrides */
+body.light {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+body.light .bg-background {
+  background-color: #f4f4f5 !important;
+}
+
+body.light .text-white {
+  color: #09090b !important;
+}
+
+body.light .text-zinc-500 {
+  color: #71717a !important;
+}
+
+body.light .text-zinc-400 {
+  color: #52525b !important;
+}
+
+body.light .glass {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light input, body.light select, body.light textarea {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #09090b !important;
+}
+
+body.light select option {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+
+body.light .text-zinc-600 {
+  color: #a1a1aa !important;
+}
+
+body.light .text-zinc-700 {
+  color: #71717a !important;
+}
+
+/* Sidebar and Global Text Overrides for Light Mode */
+body.light .bg-zinc-950 {
+  background-color: #ffffff !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02) !important;
+}
+
+body.light .text-white {
+  color: #09090b !important;
+}
+
+body.light .text-zinc-100 {
+  color: #18181b !important;
+}
+
+body.light .text-zinc-200 {
+  color: #27272a !important;
+}
+
+body.light .text-zinc-300 {
+  color: #3f3f46 !important;
+}
+
+body.light .text-zinc-400 {
+  color: #52525b !important;
+}
+
+body.light .text-zinc-500 {
+  color: #71717a !important;
+}
+
+body.light .hover\:text-white:hover {
+  color: #09090b !important;
+}
+
+body.light .bg-zinc-950\/90 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #3b82f6 !important;
+}
+
+body.light .text-white\/40 {
+  color: rgba(9, 9, 11, 0.6) !important;
+}
+
+body.light .text-white\/20 {
+  color: rgba(9, 9, 11, 0.4) !important;
+}
+
+body.light .text-white\/70 {
+  color: rgba(9, 9, 11, 0.8) !important;
+}
+
+body.light .text-white\/60 {
+  color: rgba(9, 9, 11, 0.7) !important;
+}
+
+body.light .text-white\/30 {
+  color: rgba(9, 9, 11, 0.5) !important;
+}
+
+body.light .text-white\/10 {
+  color: rgba(9, 9, 11, 0.3) !important;
+}
+
+body.light .bg-primary,
+body.light .bg-primary *,
+body.light .bg-primary h1,
+body.light .bg-primary h2,
+body.light .bg-primary h3,
+body.light .bg-primary h4,
+body.light .bg-primary h5,
+body.light .bg-primary h6,
+body.light .bg-primary span,
+body.light .bg-primary p,
+body.light .bg-primary svg {
+  color: #ffffff !important;
+}
+
+body.light .bg-danger,
+body.light .bg-danger * {
+  color: #ffffff !important;
+}
+
+body.light .bg-success,
+body.light .bg-success * {
+  color: #ffffff !important;
+}
+
+
