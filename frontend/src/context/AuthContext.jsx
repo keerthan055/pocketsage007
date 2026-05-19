@@ -10,12 +10,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Decode or just set dummy user for now to allow refresh persistence
-      setUser({ email: 'user@example.com' }); 
-    }
-    setLoading(false);
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUser(response.data);
+        } catch (error) {
+          console.error("Error fetching user details", error);
+          setUser({ email: 'user@example.com' });
+        }
+      }
+      setLoading(false);
+    };
+    fetchUser();
   }, []);
 
   const login = async (email, password) => {
@@ -26,7 +36,15 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/login`, formData);
     const { access_token } = response.data;
     localStorage.setItem('token', access_token);
-    setUser({ email }); // Simplified user object
+    
+    try {
+      const userRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/me`, {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      setUser(userRes.data);
+    } catch (err) {
+      setUser({ email }); 
+    }
     return response.data;
   };
 

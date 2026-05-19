@@ -2,10 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User, Settings, Bell, Search, LogOut, ChevronDown, Globe } from 'lucide-react';
 import { useCurrency, currencies } from '../context/CurrencyContext';
+import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
     const location = useLocation();
     const { currentCurrency, changeCurrency } = useCurrency();
+    const { user } = useAuth();
     const [showCurrency, setShowCurrency] = React.useState(false);
   const getPageTitle = () => {
     const path = location.pathname;
@@ -94,11 +96,11 @@ const Header = () => {
           </div>
 
           <Link to="/profile" className="flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/20 p-1.5 pr-4 rounded-2xl transition-all group">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-              K
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform uppercase">
+              {user?.full_name ? user.full_name.charAt(0) : (user?.email ? user.email.charAt(0) : 'U')}
             </div>
             <div className="hidden lg:block text-left">
-              <p className="text-xs font-bold leading-none">Keerthan</p>
+              <p className="text-xs font-bold leading-none capitalize">{user?.full_name || user?.email?.split('@')[0] || 'User'}</p>
               <p className="text-[10px] text-primary/70 leading-none mt-1">Free Tier</p>
             </div>
           </Link>
