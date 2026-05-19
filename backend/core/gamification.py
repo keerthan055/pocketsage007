@@ -165,7 +165,8 @@ def check_and_update_badges(db: Session, user_id: int):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     is_smart_saver = False
     if user:
-        days_registered = (datetime.utcnow() - user.created_at).days
+        created_at_naive = user.created_at.replace(tzinfo=None) if user.created_at.tzinfo else user.created_at
+        days_registered = (datetime.utcnow() - created_at_naive).days
         if days_registered >= 90:
             is_smart_saver = True
             
