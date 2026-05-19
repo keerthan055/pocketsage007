@@ -24,7 +24,7 @@ const Transactions = () => {
         date: new Date().toISOString().split('T')[0]
     });
 
-    const { formatCurrency, currencies } = useCurrency();
+    const { formatCurrency } = useCurrency();
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [showCurrencyDrop, setShowCurrencyDrop] = useState(false);
 
