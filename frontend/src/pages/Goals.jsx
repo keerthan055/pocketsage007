@@ -285,6 +285,22 @@ const Goals = () => {
                                         </div>
                                     </div>
 
+                                    {goal.category?.toLowerCase() === 'travel' && isCompleted && (
+                                        <motion.button 
+                                            whileHover={{ scale: 1.02, boxShadow: "0 0 25px rgba(59, 130, 246, 0.5)", backgroundColor: "rgba(59, 130, 246, 0.3)" }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => {
+                                                const dest = encodeURIComponent(goal.name.replace(/trip to|travel to|visit/gi, '').trim());
+                                                const url = `https://www.google.com/flights?q=flights+to+${dest}`;
+                                                window.open(url, '_blank');
+                                            }}
+                                            className="w-full py-5 mb-8 rounded-[2.5rem] bg-primary/20 border border-primary/50 text-white font-black uppercase tracking-[0.2em] italic transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(59,130,246,0.15)] relative z-10"
+                                        >
+                                            <span>BOOK THAT DAMN FLIGHT</span>
+                                            <span>✈️</span>
+                                        </motion.button>
+                                    )}
+
                                     <div className="space-y-10 relative z-10">
                                         <div className="flex justify-between items-end">
                                             <span className="text-[12px] font-black text-zinc-500 uppercase tracking-[0.4em] italic opacity-50">Intelligence Score</span>
