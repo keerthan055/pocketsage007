@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { X, DollarSign, Calendar, Tag, Layers, ArrowRight } from 'lucide-react';
+import { X, Calendar, Tag, Layers, ArrowRight } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
 const TransactionModal = ({ onClose, onSave }) => {
+  const { currentCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
@@ -37,7 +39,7 @@ const TransactionModal = ({ onClose, onSave }) => {
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase mb-2 block">Amount</label>
               <div className="relative">
-                <DollarSign className="absolute left-4 top-3.5 text-primary" size={20} />
+                <span className="absolute left-4 top-4 text-primary font-bold text-lg leading-none">{currentCurrency.symbol}</span>
                 <input 
                   type="number" 
                   step="0.01" 
