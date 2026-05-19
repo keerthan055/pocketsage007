@@ -6,6 +6,8 @@ from enum import Enum
 class TransactionType(str, Enum):
     INCOME = "Income"
     EXPENSE = "Expense"
+    TRANSFER = "Transfer"
+    INVESTMENT = "Investment"
 
 class RiskLevel(str, Enum):
     LOW = "Low"

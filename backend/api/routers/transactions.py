@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from core.database import get_db
-from models.models import User, Transaction, BankConnection
+from models.models import User, Transaction, BankConnection, TransactionType
 from core.security import get_current_user
 from datetime import datetime
 import pandas as pd
@@ -73,11 +73,27 @@ def create_transactions_bulk(
                 except Exception:
                     dt_val = datetime.utcnow()
                     
+            # Safely resolve to TransactionType enum member
+            type_str = (item.type or "").strip().upper()
+            try:
+                resolved_type = TransactionType[type_str]
+            except KeyError:
+                # fallback by scanning values or default to EXPENSE
+                type_val_lower = type_str.lower()
+                if "inc" in type_val_lower or "credit" in type_val_lower:
+                    resolved_type = TransactionType.INCOME
+                elif "trans" in type_val_lower:
+                    resolved_type = TransactionType.TRANSFER
+                elif "invest" in type_val_lower:
+                    resolved_type = TransactionType.INVESTMENT
+                else:
+                    resolved_type = TransactionType.EXPENSE
+
             txn = Transaction(
                 user_id=current_user.id,
                 amount=item.amount,
                 category=item.category,
-                type=item.type,
+                type=resolved_type,
                 description=item.description or "",
                 date=dt_val
             )
