@@ -68,19 +68,185 @@ const Transactions = () => {
     const handleCSVUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/upload-csv`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
+
+        console.log("[DEBUG] Uploaded file name:", file.name);
+
+        const reader = new FileReader();
+
+        const processRows = async (rows) => {
+            if (!rows || rows.length === 0) {
+                alert("Invalid transaction format");
+                return;
+            }
+
+            // Detect headers by checking keys of first row
+            const firstRow = rows[0];
+            const headers = Object.keys(firstRow).map(h => h.toLowerCase().trim().replace(/_/g, ' ').replace(/-/g, ' '));
+            console.log("[DEBUG] Detected headers:", headers);
+
+            const findHeaderKey = (keywords) => {
+                for (let k of Object.keys(firstRow)) {
+                    const cleanH = k.toLowerCase().trim().replace(/_/g, ' ').replace(/-/g, ' ');
+                    if (keywords.some(kw => cleanH.includes(kw))) {
+                        return k;
+                    }
+                }
+                return null;
+            };
+
+            const dateKey = findHeaderKey(["date", "time", "temporal", "timestamp", "day"]);
+            const amtKey = findHeaderKey(["amount", "volume", "value", "price", "cost", "sum", "total"]);
+            const catKey = findHeaderKey(["category", "merchant", "item", "index"]);
+            const typeKey = findHeaderKey(["type", "vector", "transaction type", "dir", "direction"]);
+            const descKey = findHeaderKey(["desc", "operation", "title", "notes", "memo", "description"]);
+
+            console.log(`[DEBUG] Mapped headers -> dateKey: ${dateKey}, amtKey: ${amtKey}, catKey: ${catKey}, typeKey: ${typeKey}, descKey: ${descKey}`);
+
+            let transactionsToInsert = [];
+            let failedRows = [];
+
+            const parseAmount = (val) => {
+                if (val === null || val === undefined || val === '') return null;
+                const valStr = String(val).replace(/[\$₹,]/g, '').trim();
+                const num = parseFloat(valStr);
+                console.log(`[DEBUG] Amount conversion: "${val}" -> "${valStr}" -> ${num}`);
+                return isNaN(num) ? null : num;
+            };
+
+            const parseDate = (val) => {
+                if (!val) return null;
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+            };
+
+            const parseType = (val) => {
+                if (!val) return "Expense";
+                const valStr = String(val).trim().toLowerCase();
+                if (valStr.includes("inc") || valStr.includes("credit")) return "Income";
+                if (valStr.includes("trans")) return "Transfer";
+                if (valStr.includes("invest")) return "Investment";
+                return valStr.charAt(0).toUpperCase() + valStr.slice(1);
+            };
+
+            rows.forEach((row, idx) => {
+                let dateVal, amtVal, catVal, typeVal, descVal;
+
+                if (Array.isArray(row)) {
+                    dateVal = parseDate(row[0]);
+                    amtVal = parseAmount(row[1]);
+                    catVal = row[2] ? String(row[2]).trim() : null;
+                    typeVal = parseType(row[3]);
+                    descVal = row[4] ? String(row[4]).trim() : "";
+                } else {
+                    const keys = Object.keys(row);
+                    if (dateKey && amtKey && catKey) {
+                        dateVal = parseDate(row[dateKey]);
+                        amtVal = parseAmount(row[amtKey]);
+                        catVal = row[catKey] ? String(row[catKey]).trim() : null;
+                        typeVal = parseType(row[typeKey]);
+                        descVal = row[descKey] ? String(row[descKey]).trim() : "";
+                    } else if (keys.length >= 4) {
+                        dateVal = parseDate(row[keys[0]]);
+                        amtVal = parseAmount(row[keys[1]]);
+                        catVal = row[keys[2]] ? String(row[keys[2]]).trim() : null;
+                        typeVal = parseType(row[keys[3]]);
+                        descVal = row[keys[4]] ? String(row[keys[4]]).trim() : "";
+                    }
+                }
+
+                if (!dateVal || amtVal === null || !catVal) {
+                    failedRows.push({ index: idx, row, reason: "Missing required fields" });
+                } else {
+                    const parsedTxn = {
+                        date: dateVal,
+                        amount: amtVal,
+                        category: catVal,
+                        type: typeVal,
+                        description: descVal || ""
+                    };
+                    transactionsToInsert.push(parsedTxn);
+                }
             });
-            fetchTransactions();
-        } catch (err) { 
-            const errorMsg = err.response?.data?.detail || "CSV/Excel Import Failed. Ensure format: Date, Amount, Category, Type, Description";
-            alert(errorMsg); 
+
+            console.log("[DEBUG] Parsed rows:", transactionsToInsert);
+            console.log("[DEBUG] Failed rows:", failedRows);
+            console.log("[DEBUG] Final transaction count:", transactionsToInsert.length);
+
+            if (transactionsToInsert.length === 0) {
+                alert("Invalid transaction format");
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/bulk`, transactionsToInsert, {
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+                
+                console.log("[DEBUG] Inserted transactions:", transactionsToInsert.length);
+                fetchTransactions();
+
+                if (failedRows.length > 0) {
+                    alert("Some rows could not be processed");
+                }
+            } catch (err) {
+                console.error("[DEBUG] Upload failure:", err);
+                alert(err.response?.data?.detail || "CSV/Excel Import Failed.");
+            }
+        };
+
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+        if (isExcel) {
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = window.XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    processRows(jsonRows);
+                } catch (err) {
+                    console.error("[DEBUG] XLSX parse error:", err);
+                    alert("Invalid transaction format");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.onload = (e) => {
+                const text = e.target.result;
+                window.Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        if (results.data && results.data.length > 0) {
+                            const firstRowKeys = Object.keys(results.data[0]);
+                            const looksLikeData = firstRowKeys.some(k => !isNaN(parseFloat(k.replace(/[\$₹,]/g, ''))));
+                            if (looksLikeData) {
+                                window.Papa.parse(text, {
+                                    header: false,
+                                    skipEmptyLines: true,
+                                    complete: (resNoHeader) => {
+                                        processRows(resNoHeader.data);
+                                    }
+                                });
+                            } else {
+                                processRows(results.data);
+                            }
+                        } else {
+                            alert("Invalid transaction format");
+                        }
+                    },
+                    error: (err) => {
+                        console.error("[DEBUG] PapaParse error:", err);
+                        alert("Invalid transaction format");
+                    }
+                });
+            };
+            reader.readAsText(file);
         }
     };
 
@@ -153,7 +319,14 @@ const Transactions = () => {
                     <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:opacity-10 transition-all"><RefreshCw size={80} /></div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Synced Ledger Balance</p>
                     <h2 className="text-3xl font-black italic text-white tracking-tighter">
-                        {formatCurrency(transactions.reduce((sum, t) => t.type === 'Income' ? sum + t.amount : sum - t.amount, 0))}
+                        {formatCurrency(transactions.reduce((sum, t) => {
+                            const typeLower = (t.type || '').toLowerCase();
+                            if (typeLower === 'income' || typeLower === 'transfer' || typeLower === 'investment') {
+                                return sum + t.amount;
+                            } else {
+                                return sum - t.amount;
+                            }
+                        }, 0))}
                     </h2>
                 </div>
                 <div className="glass p-8 rounded-[2.5rem] border-success/20 bg-success/5">
@@ -205,8 +378,17 @@ const Transactions = () => {
                                         <td className="py-5 text-sm font-black text-white italic">{t.category}</td>
                                         <td className="py-5">
                                             <div className="flex items-center gap-2">
-                                                {t.type === 'Income' ? <ArrowUpRight className="text-success" size={14} /> : <ArrowDownRight className="text-danger" size={14} />}
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${t.type === 'Income' ? 'text-success' : 'text-zinc-500'}`}>{t.type}</span>
+                                                {t.type === 'Income' && <ArrowUpRight className="text-success" size={14} />}
+                                                {t.type === 'Expense' && <ArrowDownRight className="text-danger" size={14} />}
+                                                {t.type === 'Transfer' && <RefreshCw className="text-primary" size={14} />}
+                                                {t.type === 'Investment' && <Landmark className="text-warning" size={14} />}
+                                                {!['Income', 'Expense', 'Transfer', 'Investment'].includes(t.type) && <ArrowDownRight className="text-zinc-500" size={14} />}
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                                    t.type === 'Income' ? 'text-success' :
+                                                    t.type === 'Expense' ? 'text-danger' :
+                                                    t.type === 'Transfer' ? 'text-primary' :
+                                                    t.type === 'Investment' ? 'text-warning' : 'text-zinc-500'
+                                                }`}>{t.type}</span>
                                             </div>
                                         </td>
                                         <td className="py-5 text-sm font-black text-white">{formatCurrency(t.amount)}</td>

@@ -6,7 +6,8 @@ from core.security import get_current_user
 from datetime import datetime
 import pandas as pd
 import io
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 
 router = APIRouter(tags=["transactions"])
 
@@ -45,6 +46,60 @@ def create_transaction(
         return new_txn
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+class BulkTransactionItem(BaseModel):
+    category: str
+    amount: float
+    type: str
+    date: str
+    description: Optional[str] = ""
+
+@router.post("/bulk")
+def create_transactions_bulk(
+    items: List[BulkTransactionItem],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        print(f"[DEBUG] Bulk insertion request received: {len(items)} items")
+        inserted_txns = []
+        for item in items:
+            try:
+                dt_val = datetime.fromisoformat(item.date.replace('Z', ''))
+            except Exception:
+                try:
+                    dt_val = datetime.strptime(item.date, "%Y-%m-%d")
+                except Exception:
+                    dt_val = datetime.utcnow()
+                    
+            txn = Transaction(
+                user_id=current_user.id,
+                amount=item.amount,
+                category=item.category,
+                type=item.type,
+                description=item.description or "",
+                date=dt_val
+            )
+            db.add(txn)
+            inserted_txns.append(txn)
+            print(f"[DEBUG] Bulk parsed transaction: amount={txn.amount}, category={txn.category}, type={txn.type}, date={txn.date}, description={txn.description}")
+
+        db.commit()
+        print(f"[DEBUG] Bulk commit success: {len(inserted_txns)} transactions inserted.")
+        
+        # Trigger FDS recalculation
+        try:
+            from core.fds_engine import calculate_and_save_fds
+            calculate_and_save_fds(db, current_user.id)
+            print("[DEBUG] FDS score engine updated successfully.")
+        except Exception as fds_err:
+            print(f"[DEBUG] FDS calc error: {fds_err}")
+            
+        return {"message": f"Successfully imported {len(inserted_txns)} transactions."}
+    except Exception as e:
+        db.rollback()
+        print(f"[DEBUG] Bulk upload error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/upload-csv")
