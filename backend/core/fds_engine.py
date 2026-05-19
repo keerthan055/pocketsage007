@@ -40,10 +40,53 @@ def calculate_and_save_fds(db: Session, user_id: int) -> FinancialDistressScore:
         return fds
 
     # 2. Extract transaction features
-    # Total sums
-    total_income = sum(t.amount for t in transactions if t.type == TransactionType.INCOME or t.type == 'Income')
-    total_expense = sum(t.amount for t in transactions if t.type == TransactionType.EXPENSE or t.type == 'Expense')
-    
+    def get_type_str(t):
+        if hasattr(t.type, 'name'):
+            return t.type.name.upper()
+        return str(t.type).upper()
+
+    total_income = 0.0
+    total_expense = 0.0
+    total_savings = 0.0
+    total_investments = 0.0
+    total_emi = 0.0
+
+    for t in transactions:
+        t_type = get_type_str(t)
+        cat_lower = (t.category or "").lower()
+        desc_lower = (t.description or "").lower()
+        
+        # Check if it is an EMI transaction
+        is_emi = any(kw in cat_lower or kw in desc_lower for kw in ["emi", "loan", "debt", "mortgage", "interest", "credit card payment", "cc payment"])
+        
+        # Check if it is a savings transfer
+        is_savings = any(kw in cat_lower or kw in desc_lower for kw in ["savings", "emergency", "reserve", "fund sweep", "transfer to"])
+        
+        # Check if it is an investment
+        is_invest = any(kw in cat_lower or kw in desc_lower for kw in ["investment", "sip", "etf", "mutual fund", "stocks", "equity"])
+
+        if t_type == 'INCOME' or any(kw in cat_lower or kw in desc_lower for kw in ["salary", "freelance", "bonus"]):
+            total_income += t.amount
+        elif t_type == 'TRANSFER' or is_savings:
+            total_savings += t.amount
+        elif t_type == 'INVESTMENT' or is_invest:
+            total_investments += t.amount
+        elif t_type == 'EXPENSE':
+            if is_emi:
+                total_emi += t.amount
+            else:
+                total_expense += t.amount
+        else:
+            # Fallback based on category keywords
+            if is_emi:
+                total_emi += t.amount
+            elif is_savings:
+                total_savings += t.amount
+            elif is_invest:
+                total_investments += t.amount
+            else:
+                total_expense += t.amount
+                
     # Calculate months span of transactions
     dates = [t.date for t in transactions if t.date is not None]
     if dates:
@@ -53,101 +96,100 @@ def calculate_and_save_fds(db: Session, user_id: int) -> FinancialDistressScore:
         months = max(1.0, days_span / 30.0)
     else:
         months = 1.0
-        
+
+    # Retrieve savings from goals and portfolio summary
+    from models.models import FinancialGoal, BankConnection, Investment
+    goal_savings = db.query(func.sum(FinancialGoal.current_amount)).filter(FinancialGoal.user_id == user_id).scalar() or 0.0
+    bank_balance = db.query(func.sum(BankConnection.balance)).filter(BankConnection.user_id == user_id).scalar() or 0.0
+    net_savings = total_savings + goal_savings + bank_balance
+    
+    # Retrieve investments
+    db_investments = db.query(Investment).filter(Investment.user_id == user_id).all()
+    db_invest_val = sum(i.quantity * i.current_price for i in db_investments) if db_investments else 0.0
+    net_investments = total_investments + db_invest_val
+
+    # Retrieve EMI calendar events
+    calendar_events = db.query(FinancialCalendarEvent).filter(FinancialCalendarEvent.user_id == user_id).all()
+    calendar_emi = sum(e.amount for e in calendar_events if e.event_type == 'EMI')
+    net_emi = total_emi + calendar_emi
+
     monthly_income = total_income / months
     monthly_expense = total_expense / months
+    monthly_savings = net_savings / months
+    monthly_emi = net_emi / months
+    monthly_investments = net_investments / months
+    
+    net_cashflow = monthly_income - monthly_expense - monthly_emi
     
     # --- Pillar 1: Transactions/Cash Flow (40%) ---
-    if monthly_income == 0:
-        cashflow_score = 10.0
-    else:
-        expense_ratio = monthly_expense / monthly_income
-        if expense_ratio <= 0.3:
+    if monthly_income > 0:
+        cf_ratio = net_cashflow / monthly_income
+        if cf_ratio >= 0.3:
             cashflow_score = 100.0
-        elif expense_ratio <= 0.8:
-            cashflow_score = 100.0 - (expense_ratio - 0.3) * 120.0
-        elif expense_ratio <= 1.2:
-            cashflow_score = 40.0 - (expense_ratio - 0.8) * 75.0
+        elif cf_ratio >= 0.0:
+            cashflow_score = 75.0 + (cf_ratio / 0.3) * 25.0
+        elif cf_ratio >= -0.2:
+            cashflow_score = 45.0 + ((cf_ratio + 0.2) / 0.2) * 30.0
         else:
-            cashflow_score = max(5.0, 10.0 - (expense_ratio - 1.2) * 10.0)
+            cashflow_score = max(10.0, 45.0 + (cf_ratio + 0.2) * 50.0)
+    else:
+        cashflow_score = 0.0
 
     # --- Pillar 2: Savings Health (25%) ---
-    # Retrieve savings from goals and portfolio summary
-    total_savings = db.query(func.sum(FinancialGoal.current_amount)).filter(FinancialGoal.user_id == user_id).scalar() or 0.0
-    # Bank balances
-    from models.models import BankConnection
-    bank_balance = db.query(func.sum(BankConnection.balance)).filter(BankConnection.user_id == user_id).scalar() or 0.0
-    cash_balance = max(0.0, total_income - total_expense)
-    net_savings = total_savings + bank_balance + cash_balance
-    
-    # Emergency fund ratio (months of expenses covered)
-    reserve_ratio = net_savings / (monthly_expense + 1.0)
-    if reserve_ratio >= 6.0:
-        reserve_score = 100.0
+    if monthly_income > 0:
+        savings_ratio = monthly_savings / monthly_income
+        if savings_ratio >= 0.2:
+            savings_score = 100.0
+        elif savings_ratio >= 0.0:
+            savings_score = (savings_ratio / 0.2) * 100.0
+        else:
+            savings_score = 0.0
+            
+        if net_cashflow > 0:
+            savings_score = min(100.0, savings_score + (net_cashflow / monthly_income) * 60.0)
     else:
-        reserve_score = (reserve_ratio / 6.0) * 100.0
-        
-    # Savings ratio
-    savings_ratio = (monthly_income - monthly_expense) / monthly_income if monthly_income > 0 else 0.0
-    if savings_ratio >= 0.3:
-        savings_ratio_score = 100.0
-    elif savings_ratio > 0.0:
-        savings_ratio_score = (savings_ratio / 0.3) * 100.0
-    else:
-        savings_ratio_score = 0.0
-        
-    savings_health = 0.5 * reserve_score + 0.5 * savings_ratio_score
+        savings_score = 0.0
 
     # --- Pillar 3: Debt Ratio (20%) ---
-    # Find EMI/loan/debt in transactions or calendar events
-    monthly_emi = sum(t.amount for t in transactions if (t.type == TransactionType.EXPENSE or t.type == 'Expense') and any(keyword in t.category.lower() or keyword in (t.description or "").lower() for keyword in ["emi", "loan", "debt", "mortgage", "interest"]))
-    
-    calendar_events = db.query(FinancialCalendarEvent).filter(FinancialCalendarEvent.user_id == user_id).all()
-    monthly_emi += sum(e.amount for e in calendar_events if e.event_type == 'EMI')
-    
-    dti = monthly_emi / monthly_income if monthly_income > 0 else (1.0 if monthly_emi > 0 else 0.0)
-    if dti == 0:
-        debt_ratio_score = 100.0
-    else:
-        if dti <= 0.2:
-            debt_ratio_score = 100.0 - dti * 150.0
-        elif dti <= 0.5:
-            debt_ratio_score = 70.0 - (dti - 0.2) * 150.0
+    if monthly_income > 0:
+        dti = monthly_emi / monthly_income
+        if dti == 0:
+            debt_score = 100.0
+        elif dti <= 0.20:
+            debt_score = 100.0 - (dti / 0.20) * 30.0
+        elif dti <= 0.45:
+            debt_score = 70.0 - ((dti - 0.20) / 0.25) * 45.0
         else:
-            debt_ratio_score = max(0.0, 25.0 - (dti - 0.5) * 50.0)
+            debt_score = max(10.0, 25.0 - ((dti - 0.45) / 0.25) * 20.0)
+    else:
+        debt_score = 50.0 if monthly_emi == 0 else 0.0
 
     # --- Pillar 4: Investments (10% optional) ---
-    investments = db.query(Investment).filter(Investment.user_id == user_id).all()
-    has_investments = len(investments) > 0
-    if has_investments:
-        total_investment_value = sum(i.quantity * i.current_price for i in investments)
-        unique_types = len(set(i.asset_type for i in investments))
-        diversification_score = min(100.0, unique_types * 25.0)
-        
-        total_cost = sum(i.quantity * i.buy_price for i in investments)
-        performance_ratio = (total_investment_value - total_cost) / total_cost if total_cost > 0 else 0.0
-        performance_score = max(0.0, min(100.0, 50.0 + performance_ratio * 100.0))
-        
-        investment_score = 0.6 * diversification_score + 0.4 * performance_score
+    if monthly_income > 0:
+        inv_ratio = monthly_investments / monthly_income
+        if inv_ratio >= 0.10:
+            investment_score = 100.0
+        else:
+            investment_score = (inv_ratio / 0.10) * 100.0
     else:
-        investment_score = 0.0
+        investment_score = 50.0 if monthly_investments > 0 else 0.0
 
-    # --- Pillar 5: Behavioral Analysis (3%) ---
-    # Detect spikes and weekend overspending
-    avg_txn_amount = total_expense / len(transactions) if len(transactions) > 0 else 1.0
-    spike_count = sum(1 for t in transactions if (t.type == TransactionType.EXPENSE or t.type == 'Expense') and t.amount > 5.0 * avg_txn_amount)
+    # --- Pillar 5: Behavioral Analysis (5%) ---
+    expense_txns = [t for t in transactions if get_type_str(t) == 'EXPENSE']
+    avg_txn_amount = monthly_expense / len(expense_txns) if len(expense_txns) > 0 else 1.0
+    spike_count = sum(1 for t in expense_txns if t.amount > 3.0 * avg_txn_amount)
     
-    weekend_expense = sum(t.amount for t in transactions if (t.type == TransactionType.EXPENSE or t.type == 'Expense') and t.date and t.date.weekday() in [5, 6])
-    weekend_ratio = weekend_expense / total_expense if total_expense > 0 else 0.0
+    weekend_expense = sum(t.amount for t in expense_txns if t.date and t.date.weekday() in [5, 6])
+    weekend_ratio = weekend_expense / (total_expense + 1.0)
     
     base_behavioral = 100.0
-    deductions = min(30.0, spike_count * 10.0)
-    if weekend_ratio > 0.3:
-        deductions += min(20.0, (weekend_ratio - 0.3) * 50.0)
-    deductions += min(20.0, sum(1 for t in transactions if t.is_anomaly) * 10.0)
-    behavioral_score = max(0.0, base_behavioral - deductions)
+    spike_deductions = min(40.0, spike_count * 10.0)
+    anomaly_deductions = min(30.0, sum(1 for t in transactions if t.is_anomaly) * 15.0)
+    weekend_deductions = min(20.0, (weekend_ratio - 0.40) * 50.0 if weekend_ratio > 0.40 else 0.0)
+    
+    behavioral_score = max(0.0, base_behavioral - spike_deductions - anomaly_deductions - weekend_deductions)
 
-    # --- Pillar 6: Goals & Calendar (2%) ---
+    # Calculate goal and calendar scores for metadata/UI compatibility
     goals = db.query(FinancialGoal).filter(FinancialGoal.user_id == user_id).all()
     if goals:
         completed_goals = sum(1 for g in goals if g.is_completed)
@@ -161,35 +203,35 @@ def calculate_and_save_fds(db: Session, user_id: int) -> FinancialDistressScore:
         calendar_score = min(100.0, 50.0 + len(calendar_events) * 10.0)
     else:
         calendar_score = 50.0
-        
-    goals_calendar_score = 0.5 * goal_score + 0.5 * calendar_score
 
-    # --- Weight assembly and scaling ---
-    weights = {
-        'cashflow': 0.40,
-        'savings': 0.25,
-        'debt': 0.20,
-        'behavioral': 0.03,
-        'goals_calendar': 0.02
-    }
-    if has_investments:
-        weights['investment'] = 0.10
-        total_w = 1.0
-    else:
-        total_w = sum(weights.values())
-
+    # Weighted Score calculation
     weighted_score = (
-        cashflow_score * weights['cashflow'] +
-        savings_health * weights['savings'] +
-        debt_ratio_score * weights['debt'] +
-        behavioral_score * weights['behavioral'] +
-        goals_calendar_score * weights['goals_calendar']
+        cashflow_score * 0.40 +
+        savings_score * 0.25 +
+        debt_score * 0.20 +
+        investment_score * 0.10 +
+        behavioral_score * 0.05
     )
-    if has_investments:
-        weighted_score += investment_score * weights['investment']
-
-    fds_score = int(round(weighted_score / total_w))
+    fds_score = int(round(weighted_score))
     fds_score = max(1, min(100, fds_score))
+
+    # Output debugging console logs
+    print(f"[DEBUG FDS ENGINE] --- User ID: {user_id} ---")
+    print(f"[DEBUG FDS ENGINE] Months span: {months:.2f}")
+    print(f"[DEBUG FDS ENGINE] Detected income: {monthly_income:.2f} (Total: {total_income:.2f})")
+    print(f"[DEBUG FDS ENGINE] Detected expenses: {monthly_expense:.2f} (Total: {total_expense:.2f})")
+    print(f"[DEBUG FDS ENGINE] Detected savings: {monthly_savings:.2f} (Total: {net_savings:.2f})")
+    print(f"[DEBUG FDS ENGINE] Detected investments: {monthly_investments:.2f} (Total: {net_investments:.2f})")
+    print(f"[DEBUG FDS ENGINE] Detected EMI/Debt: {monthly_emi:.2f} (Total: {net_emi:.2f})")
+    print(f"[DEBUG FDS ENGINE] Cash flow: {net_cashflow:.2f}")
+    print(f"[DEBUG FDS ENGINE] Cashflow Score: {cashflow_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Savings Score: {savings_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Debt Score: {debt_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Investment Score: {investment_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Behavioral Score: {behavioral_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Debt ratio (DTI): {monthly_emi / monthly_income if monthly_income > 0 else 0.0:.4f}")
+    print(f"[DEBUG FDS ENGINE] Final weighted score: {weighted_score:.2f}")
+    print(f"[DEBUG FDS ENGINE] Final normalized FDS: {fds_score}")
 
     # Save to financial_distress_scores
     fds = db.query(FinancialDistressScore).filter(FinancialDistressScore.user_id == user_id).first()
@@ -206,8 +248,8 @@ def calculate_and_save_fds(db: Session, user_id: int) -> FinancialDistressScore:
         
     fds.fds_score = fds_score
     fds.health_score = fds_score
-    fds.debt_ratio = debt_ratio_score
-    fds.savings_ratio = savings_health
+    fds.debt_ratio = debt_score
+    fds.savings_ratio = savings_score
     fds.cashflow_score = cashflow_score
     fds.investment_score = investment_score
     fds.behavioral_score = behavioral_score
