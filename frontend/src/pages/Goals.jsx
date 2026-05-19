@@ -39,18 +39,9 @@ const Goals = () => {
                 axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/achievements`, { headers: { Authorization: `Bearer ${token}` }})
             ]);
             
-            // Apply User Requests to Achievements
-            const modifiedAchievements = achievementsRes.data.map(badge => {
-                if (badge.title === 'Millionaire Mind') return { ...badge, unlockLevel: 10, unlocked: false };
-                if (badge.title === 'Sub Slayer') return { ...badge, unlockLevel: 20, unlocked: false };
-                if (badge.title === 'Debt Crusher') return { ...badge, unlockLevel: 5, unlocked: false };
-                if (badge.title === 'Smart Saver') return { ...badge, unlocked: true };
-                return badge;
-            });
-
             setGoals(goalsRes.data);
             setStats(statsRes.data);
-            setAchievements(modifiedAchievements);
+            setAchievements(achievementsRes.data);
             setLoading(false);
         } catch (err) { console.error(err); }
     };
@@ -101,13 +92,13 @@ const Goals = () => {
                     <div className="flex items-center gap-10">
                         <div className="w-36 h-36 rounded-full border-[10px] border-primary/20 flex items-center justify-center relative shadow-[0_0_80px_rgba(59,130,246,0.1)]">
                             <div className="absolute inset-0 rounded-full border-t-[10px] border-primary animate-spin-slow"></div>
-                            <span className="text-7xl font-black italic text-white tracking-tighter drop-shadow-2xl">{stats?.level || 4}</span>
+                            <span className="text-7xl font-black italic text-white tracking-tighter drop-shadow-2xl">{stats?.level || 1}</span>
                         </div>
                         <div className="space-y-3">
-                            <h2 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-white">LVL {stats?.level} SENTINEL</h2>
+                            <h2 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-white">LVL {stats?.level || 1} {stats?.rank || 'ROOKIE'}</h2>
                             <div className="flex items-center gap-3 px-5 py-2 bg-white/5 rounded-full border border-white/10 w-fit backdrop-blur-md">
                                 <Flame className="text-orange-500" size={16} />
-                                <span className="text-[11px] font-black uppercase tracking-[.2em] text-zinc-400">{stats?.streak} DAY SURVIVAL STREAK</span>
+                                <span className="text-[11px] font-black uppercase tracking-[.2em] text-zinc-400">{stats?.streak || 1} DAY SURVIVAL STREAK</span>
                             </div>
                         </div>
                     </div>
@@ -115,10 +106,10 @@ const Goals = () => {
                     <div className="flex-1 max-w-xl w-full space-y-4">
                         <div className="flex justify-between items-end">
                             <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[.3em] italic">Knowledge Accrual</span>
-                            <span className="text-xs font-black text-white uppercase tracking-widest">{stats?.xp} / 2000 XP</span>
+                            <span className="text-xs font-black text-white uppercase tracking-widest">{stats?.xp || 0} / {stats?.next_level_xp || 1000} XP</span>
                         </div>
                         <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner p-0.5">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats?.xp / 2000) * 100}%` }} className="h-full bg-primary rounded-full shadow-[0_0_30px_rgba(59,130,246,0.6)]" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${((stats?.xp || 0) / (stats?.next_level_xp || 1000)) * 100}%` }} className="h-full bg-primary rounded-full shadow-[0_0_30px_rgba(59,130,246,0.6)]" />
                         </div>
                     </div>
                 </div>

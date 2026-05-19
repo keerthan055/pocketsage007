@@ -43,6 +43,13 @@ def create_transaction(
         except Exception as fds_err:
             print(f"FDS calc error: {fds_err}")
             
+        try:
+            from core import gamification
+            gamification.add_xp(db, current_user.id, 20)
+            gamification.log_activity(db, current_user.id, "Transaction", f"Added manual transaction: {category} ({amount})")
+        except Exception as gem_err:
+            print(f"Gamification XP error: {gem_err}")
+            
         return new_txn
     except Exception as e:
         db.rollback()
@@ -111,6 +118,13 @@ def create_transactions_bulk(
             print("[DEBUG] FDS score engine updated successfully.")
         except Exception as fds_err:
             print(f"[DEBUG] FDS calc error: {fds_err}")
+            
+        try:
+            from core import gamification
+            gamification.add_xp(db, current_user.id, 50)
+            gamification.log_activity(db, current_user.id, "Transaction", f"Created bulk transactions ({len(inserted_txns)} items)")
+        except Exception as gem_err:
+            print(f"Gamification XP error: {gem_err}")
             
         return {"message": f"Successfully imported {len(inserted_txns)} transactions."}
     except Exception as e:
@@ -272,6 +286,13 @@ async def upload_csv(
         except Exception as fds_err:
             print(f"[DEBUG] FDS calc error: {fds_err}")
             
+        try:
+            from core import gamification
+            gamification.add_xp(db, current_user.id, 100)
+            gamification.log_activity(db, current_user.id, "Transaction", f"Uploaded transactions CSV ({len(parsed_rows)} items)")
+        except Exception as gem_err:
+            print(f"Gamification XP error: {gem_err}")
+            
         return {"message": f"Successfully imported {len(parsed_rows)} transactions."}
         
     except HTTPException as he:
@@ -305,6 +326,13 @@ def sync_bank(
         calculate_and_save_fds(db, current_user.id)
     except Exception as fds_err:
         print(f"FDS calc error: {fds_err}")
+        
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 100)
+        gamification.log_activity(db, current_user.id, "Bank", f"Linked bank connection: {bank_name}")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
         
     return {"status": "success", "message": f"Linked {bank_name} successfully."}
 

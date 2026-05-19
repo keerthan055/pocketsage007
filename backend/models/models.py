@@ -155,7 +155,9 @@ class GamificationProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     xp = Column(Integer, default=0)
     level = Column(Integer, default=1)
-    rank = Column(String, default="Beginner")
+    rank = Column(String, default="ROOKIE")
+    streak = Column(Integer, default=1)
+    last_level_up_at = Column(DateTime, nullable=True)
     total_goals_completed = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 

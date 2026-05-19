@@ -15,6 +15,13 @@ def query_sage(
 ):
     query = payload.get("text", "").lower()
     
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 20)
+        gamification.log_activity(db, current_user.id, "Copilot", f"Asked AI Copilot: '{query[:50]}...'")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
+    
     # 1. Gather Deep Financial Context
     txns = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
     fds = db.query(FinancialDistressScore).filter(FinancialDistressScore.user_id == current_user.id).order_by(FinancialDistressScore.last_updated.desc()).first()

@@ -101,6 +101,13 @@ def create_event(
     except Exception as fds_err:
         print(f"FDS calc error: {fds_err}")
 
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 10)
+        gamification.log_activity(db, current_user.id, "Calendar", f"Scheduled event: {event_in.title}")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
+
     return new_event
 
 @router.put("/{event_id}", response_model=CalendarEventOut)

@@ -101,5 +101,13 @@ def add_investment(asset: InvestmentCreate, db: Session = Depends(get_db), curre
     new_inv = Investment(**asset.model_dump(), user_id=current_user.id)
     db.add(new_inv)
     db.commit()
+    
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 100)
+        gamification.log_activity(db, current_user.id, "Investment", f"Added investment asset: {asset.asset_name} ({asset.asset_type})")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
+
     # Recalculate portfolio after adding
     return calculate_portfolio(db, current_user.id)

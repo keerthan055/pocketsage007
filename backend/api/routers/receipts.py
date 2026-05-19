@@ -83,4 +83,11 @@ async def confirm_receipt_transaction(
     except Exception as fds_err:
         print(f"FDS calc error: {fds_err}")
         
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 50)
+        gamification.log_activity(db, current_user.id, "Receipt", f"Scanned and confirmed receipt from: {merchant_name}")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
+        
     return {"status": "success", "transaction_id": new_transaction.id}

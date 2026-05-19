@@ -38,17 +38,33 @@ def create_goal(
         calculate_and_save_fds(db, current_user.id)
     except Exception as fds_err:
         print(f"FDS calc error: {fds_err}")
+
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 50)
+        gamification.log_activity(db, current_user.id, "Goal", f"Deployed strategic goal: {name}")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
         
     return new_goal
 
 @router.get("/gamification")
-def get_gamification_stats(current_user: models.User = Depends(get_current_user)):
+def get_gamification_stats(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    from core import gamification
+    try:
+        gamification.update_streak(db, current_user.id)
+        gamification.log_activity(db, current_user.id, "View", "Viewed gamification dashboard")
+    except Exception as e:
+        print(f"Error updating streak/logging: {e}")
+    
+    profile = gamification.get_or_create_profile(db, current_user.id)
+    next_xp = gamification.get_next_level_xp(profile.level)
     return {
-        "xp": 1250,
-        "level": 4,
-        "rank": "Budget Pro",
-        "streak": 14,
-        "next_level_xp": 2000,
+        "xp": profile.xp,
+        "level": profile.level,
+        "rank": profile.rank,
+        "streak": profile.streak,
+        "next_level_xp": next_xp,
         "daily_limit_reached": False
     }
 
@@ -81,6 +97,13 @@ def add_contribution(
         calculate_and_save_fds(db, current_user.id)
     except Exception as fds_err:
         print(f"FDS calc error: {fds_err}")
+
+    try:
+        from core import gamification
+        gamification.add_xp(db, current_user.id, 100)
+        gamification.log_activity(db, current_user.id, "Contribution", f"Contributed {amount} to goal: {goal.name}")
+    except Exception as gem_err:
+        print(f"Gamification XP error: {gem_err}")
         
     return {
         "status": "success",
@@ -90,10 +113,6 @@ def add_contribution(
     }
 
 @router.get("/achievements")
-def get_achievements(current_user: models.User = Depends(get_current_user)):
-    return [
-        {"id": "smart_saver", "title": "Smart Saver", "icon": "🛡️", "unlocked": True, "date": "2026-05-10"},
-        {"id": "debt_crusher", "title": "Debt Crusher", "icon": "⚔️", "unlocked": True, "date": "2026-05-12"},
-        {"id": "mil_mind", "title": "Millionaire Mind", "icon": "💎", "unlocked": False},
-        {"id": "sub_slayer", "title": "Sub Slayer", "icon": "🗡️", "unlocked": False},
-    ]
+def get_achievements(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    from core import gamification
+    return gamification.check_and_update_badges(db, current_user.id)
