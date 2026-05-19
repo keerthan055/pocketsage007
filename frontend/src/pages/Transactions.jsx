@@ -6,7 +6,7 @@ import {
     X, Wallet, CreditCard, FileText, ScanLine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency, currencies } from '../context/CurrencyContext';
 import ReceiptScannerModal from '../components/ReceiptScannerModal';
 
 const Transactions = () => {
@@ -24,7 +24,9 @@ const Transactions = () => {
         date: new Date().toISOString().split('T')[0]
     });
 
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, currencies } = useCurrency();
+    const [selectedCurrency, setSelectedCurrency] = useState(null);
+    const [showCurrencyDrop, setShowCurrencyDrop] = useState(false);
 
     const fetchTransactions = async () => {
         try {
@@ -48,12 +50,17 @@ const Transactions = () => {
         try {
             const token = localStorage.getItem('token');
             const formData = new FormData();
-            Object.entries(manualForm).forEach(([k, v]) => formData.append(k, v));
+            // Convert amount to USD before saving if a different currency is selected
+            const convRate = selectedCurrency ? selectedCurrency.rate : 1;
+            const amountInUSD = (parseFloat(manualForm.amount) / convRate).toFixed(2);
+            const submittedForm = { ...manualForm, amount: amountInUSD };
+            Object.entries(submittedForm).forEach(([k, v]) => formData.append(k, v));
             
             await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/transactions/`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowManualModal(false);
+            setSelectedCurrency(null);
             fetchTransactions();
         } catch (err) { alert("Failed to add transaction"); }
     };
@@ -233,7 +240,42 @@ const Transactions = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Volume (Amount)</label>
+                                    <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Input Currency</label>
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCurrencyDrop(!showCurrencyDrop)}
+                                            className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 text-white hover:border-primary/50 transition-all outline-none"
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                                {selectedCurrency ? `${selectedCurrency.flag} ${selectedCurrency.code} (${selectedCurrency.symbol})` : '🌐 Select Currency'}
+                                            </span>
+                                            <span className="text-zinc-500 text-xs">▼</span>
+                                        </button>
+                                        {showCurrencyDrop && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setShowCurrencyDrop(false)}></div>
+                                                <div className="absolute left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden z-50 shadow-xl">
+                                                    {currencies.map((c) => (
+                                                        <button
+                                                            key={c.code}
+                                                            type="button"
+                                                            onClick={() => { setSelectedCurrency(c); setShowCurrencyDrop(false); }}
+                                                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors ${selectedCurrency?.code === c.code ? 'bg-primary/10 text-primary' : 'text-zinc-400'}`}
+                                                        >
+                                                            <span className="text-lg">{c.flag}</span>
+                                                            <span className="font-black text-[10px] uppercase tracking-widest">{c.code}</span>
+                                                            <span className="text-[10px] opacity-50">{c.name}</span>
+                                                            <span className="ml-auto font-mono text-xs">{c.symbol}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Volume (Amount) {selectedCurrency ? `(${selectedCurrency.symbol})` : ''}</label>
                                     <input 
                                         type="number" required
                                         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-primary/50 transition-all outline-none italic font-bold"
