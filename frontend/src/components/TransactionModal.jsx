@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X, Calendar, Tag, Layers, ArrowRight } from 'lucide-react';
-import { useCurrency } from '../context/CurrencyContext';
+import { X, Calendar, Tag, ArrowRight, ChevronDown } from 'lucide-react';
+import { useCurrency, currencies } from '../context/CurrencyContext';
 
 const TransactionModal = ({ onClose, onSave }) => {
   const { currentCurrency } = useCurrency();
+  const [selectedCurrency, setSelectedCurrency] = useState(currentCurrency);
+  const [showCurrencyDrop, setShowCurrencyDrop] = useState(false);
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
@@ -14,9 +16,11 @@ const TransactionModal = ({ onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Convert entered amount to USD before saving (backend stores in USD)
+    const amountInUSD = parseFloat(formData.amount) / selectedCurrency.rate;
     onSave({
       ...formData,
-      amount: parseFloat(formData.amount)
+      amount: parseFloat(amountInUSD.toFixed(2))
     });
   };
 
@@ -36,10 +40,48 @@ const TransactionModal = ({ onClose, onSave }) => {
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-4">
+
+            {/* Currency Selector */}
+            <div>
+              <label className="text-xs font-bold text-zinc-500 uppercase mb-2 block">Input Currency</label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCurrencyDrop(!showCurrencyDrop)}
+                  className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-sm focus:border-primary outline-none hover:border-white/20 transition-all"
+                >
+                  <span className="font-bold">{selectedCurrency.flag} {selectedCurrency.code} ({selectedCurrency.symbol})</span>
+                  <ChevronDown size={16} className={`transition-transform duration-300 ${showCurrencyDrop ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showCurrencyDrop && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowCurrencyDrop(false)}></div>
+                    <div className="absolute left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden z-50 shadow-xl">
+                      {currencies.map((c) => (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => { setSelectedCurrency(c); setShowCurrencyDrop(false); }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors ${selectedCurrency.code === c.code ? 'bg-primary/10 text-primary' : 'text-zinc-400'}`}
+                        >
+                          <span className="text-lg">{c.flag}</span>
+                          <span className="font-bold">{c.code}</span>
+                          <span className="text-xs opacity-50">{c.name}</span>
+                          <span className="ml-auto font-mono">{c.symbol}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Amount */}
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase mb-2 block">Amount</label>
               <div className="relative">
-                <span className="absolute left-4 top-4 text-primary font-bold text-lg leading-none">{currentCurrency.symbol}</span>
+                <span className="absolute left-4 top-4 text-primary font-bold text-lg leading-none">{selectedCurrency.symbol}</span>
                 <input 
                   type="number" 
                   step="0.01" 
