@@ -76,4 +76,11 @@ async def confirm_receipt_transaction(
     db.add(new_transaction)
     db.commit()
     
+    # Trigger FDS recalculation
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+        
     return {"status": "success", "transaction_id": new_transaction.id}

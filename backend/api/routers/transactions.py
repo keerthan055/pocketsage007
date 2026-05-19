@@ -34,6 +34,14 @@ def create_transaction(
         db.add(new_txn)
         db.commit()
         db.refresh(new_txn)
+        
+        # Trigger FDS recalculation
+        try:
+            from core.fds_engine import calculate_and_save_fds
+            calculate_and_save_fds(db, current_user.id)
+        except Exception as fds_err:
+            print(f"FDS calc error: {fds_err}")
+            
         return new_txn
     except Exception as e:
         db.rollback()
@@ -60,6 +68,14 @@ async def upload_csv(
             db.add(txn)
         
         db.commit()
+        
+        # Trigger FDS recalculation
+        try:
+            from core.fds_engine import calculate_and_save_fds
+            calculate_and_save_fds(db, current_user.id)
+        except Exception as fds_err:
+            print(f"FDS calc error: {fds_err}")
+            
         return {"message": f"Successfully imported {len(df)} transactions."}
     except Exception as e:
         db.rollback()
@@ -81,6 +97,14 @@ def sync_bank(
     )
     db.add(new_conn)
     db.commit()
+    
+    # Trigger FDS recalculation
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+        
     return {"status": "success", "message": f"Linked {bank_name} successfully."}
 
 @router.get("/subscriptions")

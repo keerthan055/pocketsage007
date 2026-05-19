@@ -94,6 +94,13 @@ def create_event(
         
     db.commit()
     db.refresh(new_event)
+
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+
     return new_event
 
 @router.put("/{event_id}", response_model=CalendarEventOut)
@@ -117,6 +124,13 @@ def update_event(
         
     db.commit()
     db.refresh(event)
+
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+
     return event
 
 @router.delete("/{event_id}")
@@ -135,4 +149,11 @@ def delete_event(
         
     db.delete(event)
     db.commit()
+
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+
     return {"status": "success", "message": "Event deleted successfully"}

@@ -32,6 +32,13 @@ def create_goal(
     db.add(new_goal)
     db.commit()
     db.refresh(new_goal)
+    
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+        
     return new_goal
 
 @router.get("/gamification")
@@ -62,11 +69,19 @@ def add_contribution(
     
     goal.current_amount += amount
     
-    # Reward XP for contribution
-    # (In a real app, we'd update a user_stats table)
+    # Check completion
+    if goal.current_amount >= goal.target_amount:
+        goal.is_completed = True
     
     db.commit()
     db.refresh(goal)
+    
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, current_user.id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+        
     return {
         "status": "success",
         "new_amount": goal.current_amount,

@@ -36,10 +36,10 @@ def query_sage(
         # Affordability Analysis Simulator
         if balance < 10000:
             return {"response": "Based on your current liquidity and debt-to-income ratio, adding a new recurring EMI would be a high-risk decision. I recommend deferring this purchase."}
-        return {"response": f"Analyzing affordability... Your current balance of ₹{balance} and an FDS of {fds.current_score if fds else 70} suggests you can handle a moderate EMI, but it will reduce your savings velocity by 12%."}
+        return {"response": f"Analyzing affordability... Your current balance of ₹{balance} and an FDS of {fds.fds_score if fds else 0} suggests you can handle a moderate EMI, but it will reduce your savings velocity by 12%."}
 
     if "fds" in query or "score" in query or "drop" in query:
-        return {"response": f"Your current Financial Distress Score is {fds.current_score if fds else 70}. The recent drop is directly correlated to your increased spending in the shopping category and a 5-day pause in budget consistency."}
+        return {"response": f"Your current Financial Distress Score is {fds.fds_score if fds else 0}. The recent drop is directly correlated to your increased spending in the shopping category and a 5-day pause in budget consistency."}
 
     if "save" in query or "balance" in query:
         return {"response": f"Your synchronized balance is ₹{balance}. To reach your goals faster, I recommend optimizing your subscription burden which is currently at ₹{total_spent * 0.1}."}

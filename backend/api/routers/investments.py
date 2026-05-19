@@ -50,6 +50,13 @@ def calculate_portfolio(db: Session, user_id: int):
     db.commit()
     db.refresh(summary)
 
+    # Trigger FDS recalculation
+    try:
+        from core.fds_engine import calculate_and_save_fds
+        calculate_and_save_fds(db, user_id)
+    except Exception as fds_err:
+        print(f"FDS calc error: {fds_err}")
+
     # Calculate Allocation
     alloc_map = {}
     for inv in investments:

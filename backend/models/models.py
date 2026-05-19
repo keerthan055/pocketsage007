@@ -218,16 +218,20 @@ class Subscription(Base):
     usage_frequency = Column(String)
 
 class FinancialDistressScore(Base):
-    __tablename__ = "fds_scores"
+    __tablename__ = "financial_distress_scores"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    current_score = Column(Integer, default=70)
-    risk_category = Column(String)
-    debt_risk = Column(Float)
-    savings_health = Column(Float)
-    spending_discipline = Column(Float)
-    stability = Column(Float)
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    fds_score = Column(Integer, default=0)
+    health_score = Column(Integer, default=0)
+    debt_ratio = Column(Float, default=0.0)
+    savings_ratio = Column(Float, default=0.0)
+    cashflow_score = Column(Float, default=0.0)
+    investment_score = Column(Float, default=0.0)
+    behavioral_score = Column(Float, default=0.0)
+    goal_score = Column(Float, default=0.0)
+    calendar_score = Column(Float, default=0.0)
+    risk_level = Column(String, default="Insufficient Financial Data")
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class FDSHistory(Base):
     __tablename__ = "fds_history"
