@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, Settings, Bell, Search, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Globe } from 'lucide-react';
 import { useCurrency, currencies } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,22 +27,7 @@ const Header = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search Bar Stub */}
-        <div className="hidden md:flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-2xl focus-within:border-primary/50 transition-all">
-          <Search size={16} className="text-white/30" />
-          <input 
-            type="text" 
-            placeholder="Search intelligence..." 
-            className="bg-transparent border-none text-sm focus:outline-none text-white/70 w-48"
-          />
-        </div>
-
         <div className="flex items-center gap-2">
-          <button className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white/60 hover:text-white transition-all relative">
-            <Bell size={18} />
-            <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-danger rounded-full border-2 border-background"></div>
-          </button>
-          
           <Link to="/settings" className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white/60 hover:text-white transition-all">
             <Settings size={18} />
           </Link>
