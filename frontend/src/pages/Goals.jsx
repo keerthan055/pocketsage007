@@ -31,19 +31,73 @@ const Goals = () => {
     const { formatCurrency } = useCurrency();
 
     const fetchData = async () => {
+        console.log("[DEBUG] Goals page mount: starting data fetch");
         try {
             const token = localStorage.getItem('token');
-            const [goalsRes, statsRes, achievementsRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/`, { headers: { Authorization: `Bearer ${token}` }}),
-                axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/gamification`, { headers: { Authorization: `Bearer ${token}` }}),
-                axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/achievements`, { headers: { Authorization: `Bearer ${token}` }})
-            ]);
+            console.log("[DEBUG] Fetching token from localStorage:", token ? "Token present" : "Token missing");
             
-            setGoals(goalsRes.data);
-            setStats(statsRes.data);
-            setAchievements(achievementsRes.data);
+            let goalsData = [];
+            let statsData = {
+                xp: 0,
+                level: 1,
+                rank: "ROOKIE",
+                streak: 0,
+                next_level_xp: 1000,
+                daily_limit_reached: false
+            };
+            let achievementsData = [];
+
+            // Fetch goals
+            try {
+                const goalsRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/`, { headers: { Authorization: `Bearer ${token}` }});
+                goalsData = goalsRes.data || [];
+                console.log("[DEBUG] Goals loaded successfully:", goalsData.length, "items");
+            } catch (err) {
+                console.error("[DEBUG] Failed to load goals, falling back to empty list:", err);
+            }
+
+            // Fetch gamification stats
+            try {
+                const statsRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/gamification`, { headers: { Authorization: `Bearer ${token}` }});
+                if (statsRes.data) {
+                    statsData = statsRes.data;
+                }
+                console.log("[DEBUG] Progression load success:", statsData);
+                console.log("[DEBUG] XP calculation - Current:", statsData.xp, "Next Level threshold:", statsData.next_level_xp);
+                console.log("[DEBUG] Level calculation - Current level:", statsData.level, "Rank title:", statsData.rank);
+            } catch (err) {
+                console.error("[DEBUG] Failed to load progression stats, falling back to LEVEL 1 ROOKIE:", err);
+            }
+
+            // Fetch achievements/badges
+            try {
+                const achievementsRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/goals/achievements`, { headers: { Authorization: `Bearer ${token}` }});
+                achievementsData = achievementsRes.data || [];
+                console.log("[DEBUG] Badge calculation loaded:", achievementsData.length, "badges");
+            } catch (err) {
+                console.error("[DEBUG] Failed to load achievements, falling back to empty badges list:", err);
+            }
+
+            setGoals(goalsData);
+            setStats(statsData);
+            setAchievements(achievementsData);
+
+        } catch (err) {
+            console.error("[DEBUG] General fetch data crash, falling back to safe defaults:", err);
+            setGoals([]);
+            setStats({
+                xp: 0,
+                level: 1,
+                rank: "ROOKIE",
+                streak: 0,
+                next_level_xp: 1000,
+                daily_limit_reached: false
+            });
+            setAchievements([]);
+        } finally {
+            console.log("[DEBUG] Loading completion - resolving spinner");
             setLoading(false);
-        } catch (err) { console.error(err); }
+        }
     };
 
     useEffect(() => { fetchData(); }, []);
