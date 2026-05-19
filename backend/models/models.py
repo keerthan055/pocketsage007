@@ -13,6 +13,8 @@ class RiskLevel(str, enum.Enum):
 class TransactionType(str, enum.Enum):
     INCOME = "Income"
     EXPENSE = "Expense"
+    TRANSFER = "Transfer"
+    INVESTMENT = "Investment"
 
 class User(Base):
     __tablename__ = "users"

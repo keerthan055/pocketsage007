@@ -78,7 +78,10 @@ const Transactions = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchTransactions();
-        } catch (err) { alert("CSV Import Failed. Ensure format: Category,Amount,Type"); }
+        } catch (err) { 
+            const errorMsg = err.response?.data?.detail || "CSV/Excel Import Failed. Ensure format: Date, Amount, Category, Type, Description";
+            alert(errorMsg); 
+        }
     };
 
     const handleLinkBank = async (bank) => {
@@ -118,8 +121,8 @@ const Transactions = () => {
                         </div>
                     </button>
                     <label className="glass px-5 py-3 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-success hover:bg-success/10 transition-all border-success/20 cursor-pointer">
-                        <Upload size={16} /> Upload CSV
-                        <input type="file" className="hidden" onChange={handleCSVUpload} accept=".csv" />
+                        <Upload size={16} /> Upload CSV/Excel
+                        <input type="file" className="hidden" onChange={handleCSVUpload} accept=".csv, .xlsx, .xls" />
                     </label>
 
                     <button 
